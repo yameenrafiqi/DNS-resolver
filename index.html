@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNS Resolver Interface</title>
+    <style>
+        /* Import fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #0a0a0a;
+  color: #fff;
+  font-family: 'Poppins', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  animation: fadeIn 1s ease-in;
+}
+
+/* Text styles with gradient */
+h1, h2, h3, label {
+  background: linear-gradient(90deg, #6a5af9, #d66efd);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: glowText 4s infinite alternate;
+  margin-bottom: 1rem;
+}
+
+/* Form elements */
+.form-group {
+  margin-bottom: 1.5rem;
+  width: 100%;
+  max-width: 500px;
+}
+
+input, select, textarea {
+  width: 100%;
+  background: rgba(17, 17, 17, 0.8);
+  border: 1px solid #6a5af9;
+  border-radius: 8px;
+  padding: 12px;
+  color: white;
+  font-family: 'Poppins', sans-serif;
+  box-shadow: 0 0 8px rgba(106, 90, 249, 0.4);
+  transition: all 0.3s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #d66efd;
+  box-shadow: 0 0 15px rgba(214, 110, 253, 0.6);
+}
+
+/* Radio buttons */
+.radio-group {
+  display: flex;
+  gap: 1.5rem;
+  margin: 1rem 0;
+}
+
+input[type="radio"] {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #6a5af9;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+input[type="radio"]:checked {
+  background: #d66efd;
+  box-shadow: 0 0 15px #d66efd;
+}
+
+/* Button styles */
+button {
+  background: linear-gradient(90deg, #6a5af9, #d66efd);
+  color: white;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 15px rgba(106, 90, 249, 0.4);
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 25px rgba(214, 110, 253, 0.6);
+  animation: pulse 1.5s infinite;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes glowText {
+  0% { 
+    text-shadow: 0 0 10px rgba(106, 90, 249, 0.5);
+  }
+  100% { 
+    text-shadow: 0 0 20px rgba(214, 110, 253, 0.8);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(106, 90, 249, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(214, 110, 253, 0.8);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  body {
+    padding: 1rem;
+  }
+  
+  .form-group {
+    max-width: 100%;
+  }
+  
+  button {
+    width: 100%;
+  }
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DNS Resolver Interface</h1>
+        
+        <div class="config-section">
+            <h2>Server Configuration</h2>
+            <div class="form-group">
+                <label for="serverIp">Server IP Address:</label>
+                <input type="text" id="serverIp" placeholder="Enter DNS server IP address" value="127.0.0.1">
+            </div>
+            <div class="form-group">
+                <label for="serverPort">Server Port:</label>
+                <input type="number" id="serverPort" placeholder="Enter port number" value="5300">
+            </div>
+        </div>
+
+        <div class="config-section">
+            <h2>DNS Query</h2>
+            <div class="form-group">
+                <label for="domainName">Domain Name:</label>
+                <input type="text" id="domainName" placeholder="Enter domain name (e.g., example.com)">
+            </div>
+            <div class="form-group">
+                <label>Resolution Type:</label>
+                <div class="radio-group">
+                    <input type="radio" id="recursive" name="resolutionType" value="recursive" checked>
+                    <label for="recursive">Recursive</label>
+                    <input type="radio" id="iterative" name="resolutionType" value="iterative">
+                    <label for="iterative">Iterative</label>
+                </div>
+            </div>
+            <button onclick="resolveDomain()">Resolve Domain</button>
+            <div id="error" class="error"></div>
+        </div>
+
+        <div id="loading" class="loading">Processing DNS Query</div>
+
+        <div id="results">
+            <div class="result-section">
+                <h2>Resolution Results</h2>
+                <div id="domainResult"></div>
+                <div id="ipAddresses"></div>
+                <div id="queryTime"></div>
+            </div>
+
+            <div class="result-section">
+                <h2>Resolution Trace</h2>
+                <div id="trace-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function resolveDomain() {
+            // Reset previous results
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+
+            // Get form values
+            const domainName = document.getElementById('domainName').value.trim();
+            const serverIp = document.getElementById('serverIp').value.trim();
+            const serverPort = document.getElementById('serverPort').value.trim();
+            const resolutionType = document.querySelector('input[name="resolutionType"]:checked').value;
+
+            // Validate input
+            if (!domainName) {
+                showError('Please enter a domain name');
+                return;
+            }
+
+            if (!serverIp) {
+                showError('Please enter the DNS server IP address');
+                return;
+            }
+
+            if (!serverPort) {
+                showError('Please enter the DNS server port');
+                return;
+            }
+
+            try {
+                const startTime = performance.now();
+
+                // Create socket connection and send query
+                const response = await sendDNSQuery({
+                    domainName,
+                    serverIp,
+                    serverPort: parseInt(serverPort),
+                    queryType: resolutionType
+                });
+
+                const endTime = performance.now();
+                const queryTime = (endTime - startTime).toFixed(2);
+
+                displayResults(response, queryTime, domainName);
+            } catch (error) {
+                showError(error.message || 'Failed to resolve domain. Please check server connection and try again.');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        async function sendDNSQuery(params) {
+            try {
+                const response = await fetch(`http://${params.serverIp}:${params.serverPort}/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        transaction_id: Math.floor(Math.random() * 65535),
+                        query_type: params.queryType,
+                        domain_name: params.domainName,
+                        query_packet: generateDummyQueryPacket() // In real implementation, this would be actual DNS packet
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                if (error.message.includes('Failed to fetch')) {
+                    throw new Error(`Cannot connect to DNS server at ${params.serverIp}:${params.serverPort}. Please check if:\n1. The server is running\n2. The IP and port are correct\n3. No firewall is blocking the connection`);
+                }
+                throw error;
+            }
+        }
+
+        function generateDummyQueryPacket() {
+            // This is a placeholder - in a real implementation, this would generate an actual DNS query packet
+            return "00000000";
+        }
+
+        function displayResults(response, queryTime, domainName) {
+            const results = document.getElementById('results');
+            const domainResult = document.getElementById('domainResult');
+            const ipAddresses = document.getElementById('ipAddresses');
+            const queryTimeElement = document.getElementById('queryTime');
+            const traceContainer = document.getElementById('trace-container');
+
+            // Display domain and query info
+            domainResult.innerHTML = `<h3>Domain: ${domainName}</h3>`;
+            
+            // Display IP addresses
+            if (response.ip_addresses && response.ip_addresses.length > 0) {
+                ipAddresses.innerHTML = '<h3>IP Addresses:</h3>' + 
+                    response.ip_addresses.map(ip => `<span class="ip-address">${ip}</span>`).join(' ');
+            } else {
+                ipAddresses.innerHTML = '<h3>No IP addresses found</h3>';
+            }
+
+            // Display query time
+            queryTimeElement.innerHTML = `<p>Query completed in ${queryTime}ms</p>`;
+
+            // Display trace
+            if (response.trace && response.trace.length > 0) {
+                traceContainer.innerHTML = response.trace.map((step, index) => `
+                    <div class="trace-item">
+                        <strong>Step ${index + 1}:</strong>
+                        <p>Server: ${step.server}</p>
+                        ${step.query ? `<p>Query: ${step.query}</p>` : ''}
+                        ${step.action ? `<p>Action: ${step.action}</p>` : ''}
+                        ${step.response ? `<p>Response: ${step.response}</p>` : ''}
+                        ${step.next ? `<p>Next Server: ${step.next}</p>` : ''}
+                    </div>
+                `).join('');
+            } else {
+                traceContainer.innerHTML = '<p>No trace information available</p>';
+            }
+
+            results.style.display = 'block';
+        }
+
+        function showError(message) {
+            const error = document.getElementById('error');
+            error.textContent = message;
+            error.style.display = 'block';
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        // Optional: Add event listener for Enter key in domain input
+        document.getElementById('domainName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                resolveDomain();
+            }
+        });
+    </script>
+</body>
+</html>
